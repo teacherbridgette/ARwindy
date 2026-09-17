@@ -1,41 +1,109 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Classroom AR Experience</title>
+    <!-- A-Frame & MindAR Libraries -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+      body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+
+      /* User overlay button to bypass iOS autoplay limits */
+      #start-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85); color: white; display: flex;
+        flex-direction: column; justify-content: center; align-items: center;
+        z-index: 999; text-align: center; padding: 20px; box-sizing: border-box;
+      }
+
+      #start-btn, #unmute-btn {
+        background: #007bff; color: white; border: none; padding: 15px 30px;
+        font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer;
+        margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      }
+
+      /* Audio control button overlay */
+      #unmute-btn {
+        position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+        z-index: 500; display: none; background: #28a745;
+      }
+    </style>
   </head>
+
   <body>
-    <!-- 1. Point to your targets.mind file -->
-    <a-scene mindar-image="imageTargetSrc: YOUR_GLITCH_MIND_FILE_URL_HERE;" 
-             color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
-             vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <!-- Start Overlay for Mobile Browsers -->
+    <div id="start-overlay">
+      <h2>Classroom AR Scanner</h2>
+      <p>Point your camera at the target picture once loaded.</p>
+      <button id="start-btn">Tap to Start Camera</button>
+    </div>
+
+    <!-- On-screen Unmute Button -->
+    <button id="unmute-btn">🔊 Enable Audio</button>
+
+    <!-- AR Scene -->
+    <a-scene 
+      mindar-image="imageTargetSrc: ./targets.mind; uiLoading:yes; uiError:yes;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
 
       <a-assets>
-        <!-- 2. Point to your mp4 video file -->
-        <video id="ar-video" src="YOUR_GLITCH_VIDEO_URL_HERE" 
-               preload="auto" response-type="arraybuffer" loop 
-               crossorigin webkit-playsinline playsinline></video>
+        <!-- Preloaded Video Target -->
+        <video id="ar-video" 
+               src="./classroom-video.mp4" 
+               preload="auto" 
+               loop 
+               crossorigin="anonymous" 
+               webkit-playsinline 
+               playsinline 
+               muted>
+        </video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- 3. Attach the video plane to the target picture -->
+      <!-- Target Entity -->
       <a-entity mindar-image-target="targetIndex: 0" id="target-entity">
-        <a-video src="#ar-video" width="1" height="0.55" position="0 0 0" rotation="0 0 0"></a-video>
+        <a-video src="#ar-video" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
       </a-entity>
     </a-scene>
 
     <script>
-      // 4. Auto-play video when image is detected, pause when lost
+      const startOverlay = document.querySelector('#start-overlay');
+      const startBtn = document.querySelector('#start-btn');
+      const unmuteBtn = document.querySelector('#unmute-btn');
       const targetEntity = document.querySelector('#target-entity');
       const video = document.querySelector('#ar-video');
 
+      // 1. User gesture unlocks video audio context
+      startBtn.addEventListener('click', () => {
+        startOverlay.style.display = 'none';
+        video.play();
+        video.pause(); // Pre-warm the video pipeline
+      });
+
+      // 2. Play video when picture target is found
       targetEntity.addEventListener("targetFound", () => {
         video.play();
+        if (video.muted) {
+          unmuteBtn.style.display = 'block';
+        }
       });
+
+      // 3. Pause video when target disappears
       targetEntity.addEventListener("targetLost", () => {
         video.pause();
+        unmuteBtn.style.display = 'none';
+      });
+
+      // 4. Manual Unmute action
+      unmuteBtn.addEventListener('click', () => {
+        video.muted = false;
+        unmuteBtn.style.display = 'none';
       });
     </script>
   </body>
