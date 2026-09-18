@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Classroom AR Scanner</title>
+    <title>Workshop AR Scanner</title>
 
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -16,24 +16,11 @@
       }
       button {
         padding: 15px 30px; font-size: 18px; font-weight: bold;
-        background: #007bff; color: white; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer;
+        background: #28a745; color: white; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer;
       }
     </style>
 
     <script>
-      // Automatically load targets0.mind through targets3.mind
-      document.addEventListener("DOMContentLoaded", function() {
-        var scene = document.querySelector("a-scene");
-        var targetPaths = [
-          "./targets0.mind",
-          "./targets1.mind",
-          "./targets2.mind",
-          "./targets3.mind"
-        ];
-        scene.setAttribute("mindar-image", "imageTargetSrc: " + targetPaths.join(";") + "; maxTrack: 2;");
-      });
-
-      // Unified media handler component
       AFRAME.registerComponent('media-handler', {
         init: function () {
           var target = this.el;
@@ -58,11 +45,12 @@
       function startAR() {
         document.getElementById('overlay').style.display = 'none';
         
-        // Mobile media unlock requirement
+        // Silence and prime all preloaded media so audio doesn't start early
         var mediaElements = document.querySelectorAll('video, audio');
         mediaElements.forEach(function(media) {
           media.play().then(function() {
             media.pause();
+            media.currentTime = 0;
           }).catch(function(e){ console.log(e); });
         });
       }
@@ -73,11 +61,12 @@
 
     <div id="overlay">
       <h2>Classroom AR Scanner</h2>
-      <p>Tap below to start camera & enable sound</p>
       <button onclick="startAR()">Start Camera</button>
     </div>
 
+    <!-- Array syntax [file1, file2...] loads multiple .mind targets properly -->
     <a-scene 
+      mindar-image="imageTargetSrc: [./targets0.mind, ./targets1.mind, ./targets2.mind, ./targets3.mind]; maxTrack: 2;"
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
@@ -90,7 +79,7 @@
         <video id="v3" src="video3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="v4" src="video4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
 
-        <!-- MP3 Audio -->
+        <!-- Audio Tracks -->
         <audio id="a1" src="audio1.mp3" preload="auto" crossorigin="anonymous"></audio>
         <audio id="a2" src="audio2.mp3" preload="auto" crossorigin="anonymous"></audio>
         <audio id="a3" src="audio3.mp3" preload="auto" crossorigin="anonymous"></audio>
