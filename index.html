@@ -1,93 +1,116 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>AR Video Experience</title>
-    <!-- A-Frame and MindAR Libraries -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Image AR Video</title>
+
+    <!-- MindAR and A-Frame Libraries -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      body { margin: 0; overflow: hidden; font-family: sans-serif; }
-      
-      /* UI Overlay to unlock mobile media permissions */
       #overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85); color: #fff;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        z-index: 9999; text-align: center; padding: 20px; box-sizing: border-box;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        font-family: Arial, sans-serif;
+        text-align: center;
       }
-
       #start-btn {
-        background: #007bff; color: white; border: none; padding: 15px 32px;
-        font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer;
-        margin-top: 20px;
+        padding: 15px 30px;
+        font-size: 18px;
+        font-weight: bold;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        margin-top: 15px;
+        cursor: pointer;
       }
     </style>
+
+    <script>
+      AFRAME.registerComponent('videohandler', {
+        init: function () {
+          var target = this.el;
+          this.vid = document.querySelector("#ar-video");
+
+          target.addEventListener('targetFound', function () {
+            if (this.vid) {
+              this.vid.play().catch(function(e) {
+                console.log("Autoplay issue: ", e);
+              });
+            }
+          }.bind(this));
+
+          target.addEventListener('targetLost', function() {
+            if (this.vid) {
+              this.vid.pause();
+            }
+          }.bind(this));
+        }
+      });
+
+      function startAR() {
+        document.getElementById('overlay').style.display = 'none';
+        var video = document.querySelector('#ar-video');
+        
+        // Unlock video playback on mobile devices
+        video.play();
+        video.pause();
+      }
+    </script>
   </head>
 
-  <body>
-    <!-- User Gesture Overlay (Required for mobile video playback) -->
+  <body style="margin: 0px; overflow: hidden;">
+
+    <!-- Tap-to-Start Screen (Required for iOS/Android video sound) -->
     <div id="overlay">
-      <h2>Classroom AR Scanner</h2>
-      <p>Tap below to start camera & enable video playback</p>
-      <button id="start-btn">Start AR Camera</button>
+      <h2>AR Image Scanner</h2>
+      <p>Tap below to start the camera</p>
+      <button id="start-btn" onclick="startAR()">Start Experience</button>
     </div>
 
-    <!-- WebAR Scene -->
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false">
-
+      device-orientation-permission-ui="enabled: false"
+    >
       <a-assets>
-        <!-- Inline attributes prevent iOS full-screen media takeover -->
-        <video id="ar-video" 
-               src="./classroom-video.mp4" 
-               preload="auto" 
-               loop 
-               crossorigin="anonymous" 
-               playsinline 
-               webkit-playsinline 
-               muted>
-        </video>
+        <video 
+          id="ar-video" 
+          src="video.mp4" 
+          preload="auto" 
+          loop 
+          crossorigin="anonymous" 
+          playsinline 
+          webkit-playsinline
+        ></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target setup matching your compiled target image -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-video src="#ar-video" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+      <!-- Target Index 0 corresponds to targets.mind -->
+      <a-entity mindar-image-target="targetIndex: 0" videohandler>
+        <a-video 
+          src="#ar-video" 
+          width="1" 
+          height="0.5625" 
+          position="0 0 0" 
+          rotation="0 0 0"
+        ></a-video>
       </a-entity>
     </a-scene>
-
-    <script>
-      const overlay = document.getElementById('overlay');
-      const startBtn = document.getElementById('start-btn');
-      const target = document.getElementById('target');
-      const video = document.getElementById('ar-video');
-
-      // Unlocks video playback buffer on user tap
-      startBtn.addEventListener('click', () => {
-        overlay.style.display = 'none';
-        video.play().then(() => {
-          video.pause(); // Warm up video buffer
-        }).catch((err) => {
-          console.log("Video setup error:", err);
-        });
-      });
-
-      // Play video when image target is detected
-      target.addEventListener('targetFound', () => {
-        video.play();
-      });
-
-      // Pause video when image target is lost
-      target.addEventListener('targetLost', () => {
-        video.pause();
-      });
-    </script>
   </body>
 </html>
