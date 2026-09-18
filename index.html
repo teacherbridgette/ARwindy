@@ -2,21 +2,20 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>4 Target AR Experience with Video & Audio</title>
+    <title>Classroom AR Scanner</title>
 
-    <!-- Essential A-Frame & MindAR Libraries -->
+    <!-- Stable A-Frame & MindAR CDNs -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* Screen Overlay required to unlock video/audio sound on mobile browsers */
       #overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(0, 0, 0, 0.9);
         color: white;
         display: flex;
         flex-direction: column;
@@ -27,65 +26,59 @@
         text-align: center;
       }
       #start-btn {
-        padding: 15px 30px;
-        font-size: 18px;
+        padding: 16px 36px;
+        font-size: 20px;
         font-weight: bold;
-        background-color: #007bff;
+        background-color: #28a745;
         color: white;
         border: none;
         border-radius: 8px;
-        margin-top: 15px;
+        margin-top: 20px;
         cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       }
     </style>
 
     <script>
-      // Component that links each AR Target with its corresponding Video and MP3 Audio
-      AFRAME.registerComponent('media-handler', {
+      AFRAME.registerComponent('ar-video-handler', {
         init: function () {
           var target = this.el;
           var videoSelector = target.getAttribute('data-video');
-          var audioSelector = target.getAttribute('data-audio');
-
           this.vid = document.querySelector(videoSelector);
-          this.aud = document.querySelector(audioSelector);
 
           target.addEventListener('targetFound', function () {
-            // Restart and play video when target image comes into view
             if (this.vid) {
               this.vid.currentTime = 0;
-              this.vid.play().catch(function(e) { console.log("Video error: ", e); });
-            }
-            // Restart and play separate MP3 sound track
-            if (this.aud) {
-              this.aud.currentTime = 0;
-              this.aud.play().catch(function(e) { console.log("Audio error: ", e); });
+              // Unmute when image is detected
+              this.vid.muted = false;
+              var playPromise = this.vid.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(function(e) {
+                  console.log("Playback error: ", e);
+                });
+              }
             }
           }.bind(this));
 
           target.addEventListener('targetLost', function() {
-            // Pause playback when phone camera loses sight of target
             if (this.vid) {
               this.vid.pause();
-            }
-            if (this.aud) {
-              this.aud.pause();
             }
           }.bind(this));
         }
       });
 
-      // Called when user clicks "Start Experience"
       function startAR() {
         document.getElementById('overlay').style.display = 'none';
         
-        // Mobile browsers require media elements to be primed by user tap
-        var mediaElements = document.querySelectorAll('video, audio');
-        mediaElements.forEach(function(media) {
-          media.play().then(function() {
-            media.pause();
+        // Unlock all videos for mobile playback
+        var videos = document.querySelectorAll('video');
+        videos.forEach(function(video) {
+          video.muted = false;
+          video.play().then(function() {
+            video.pause();
           }).catch(function(e) {
-            console.log("Preload media unlock error:", e);
+            console.log("Preload error:", e);
           });
         });
       }
@@ -94,14 +87,13 @@
 
   <body style="margin: 0px; overflow: hidden;">
 
-    <!-- Touch overlay to trigger permissions -->
+    <!-- User Interaction Overlay -->
     <div id="overlay">
-      <h2>Classroom AR Scanner</h2>
-      <p>Tap below to start camera & enable sound</p>
+      <h2>AR Workshop Scanner</h2>
+      <p>Tap below to enable camera & sound</p>
       <button id="start-btn" onclick="startAR()">Start Experience</button>
     </div>
 
-    <!-- AR Scene Definition -->
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 2;" 
       color-space="sRGB" 
@@ -110,38 +102,32 @@
       device-orientation-permission-ui="enabled: false"
     >
       <a-assets>
-        <!-- Videos (Muted in element since sound comes from separate MP3) -->
-        <video id="v1" src="video1.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="v2" src="video2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="v3" src="video3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="v4" src="video4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-
-        <!-- MP3 Sound Files -->
-        <audio id="a1" src="audio1.mp3" preload="auto" crossorigin="anonymous"></audio>
-        <audio id="a2" src="audio2.mp3" preload="auto" crossorigin="anonymous"></audio>
-        <audio id="a3" src="audio3.mp3" preload="auto" crossorigin="anonymous"></audio>
-        <audio id="a4" src="audio4.mp3" preload="auto" crossorigin="anonymous"></audio>
+        <!-- Videos initialized muted to guarantee mobile autoplay compliance -->
+        <video id="v1" src="video1.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+        <video id="v2" src="video2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+        <video id="v3" src="video3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+        <video id="v4" src="video4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target 0 -> video1.mp4 + audio1.mp3 -->
-      <a-entity mindar-image-target="targetIndex: 0" media-handler data-video="#v1" data-audio="#a1">
+      <!-- Target 0 -> Video 1 -->
+      <a-entity mindar-image-target="targetIndex: 0" ar-video-handler data-video="#v1">
         <a-video src="#v1" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
       </a-entity>
 
-      <!-- Target 1 -> video2.mp4 + audio2.mp3 -->
-      <a-entity mindar-image-target="targetIndex: 1" media-handler data-video="#v2" data-audio="#a2">
+      <!-- Target 1 -> Video 2 -->
+      <a-entity mindar-image-target="targetIndex: 1" ar-video-handler data-video="#v2">
         <a-video src="#v2" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
       </a-entity>
 
-      <!-- Target 2 -> video3.mp4 + audio3.mp3 -->
-      <a-entity mindar-image-target="targetIndex: 2" media-handler data-video="#v3" data-audio="#a3">
+      <!-- Target 2 -> Video 3 -->
+      <a-entity mindar-image-target="targetIndex: 2" ar-video-handler data-video="#v3">
         <a-video src="#v3" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
       </a-entity>
 
-      <!-- Target 3 -> video4.mp4 + audio4.mp3 -->
-      <a-entity mindar-image-target="targetIndex: 3" media-handler data-video="#v4" data-audio="#a4">
+      <!-- Target 3 -> Video 4 -->
+      <a-entity mindar-image-target="targetIndex: 3" ar-video-handler data-video="#v4">
         <a-video src="#v4" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
       </a-entity>
 
